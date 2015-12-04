@@ -1,0 +1,94 @@
+    <?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the begateway_payment module.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function begateway_payment_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    $library = libraries_detect('beGateway');
+    $requirements['beGateway'] = array(
+      'title' => $t('beGateway API library'),
+    );
+    if ($library['installed']) {
+      $requirements['beGateway']['value'] = $library['version'];
+      $requirements['beGateway']['severity'] = REQUIREMENT_OK;
+    }
+    else {
+      $requirements['beGateway']['value'] = $library['error'];
+      $requirements['beGateway']['description'] = $library['error message'];
+      $requirements['beGateway']['severity'] = REQUIREMENT_ERROR;
+    }
+  }
+
+  return $requirements;
+}
+
+
+/**
+ * Implements hook_schema().
+ */
+function begateway_payment_schema() {
+
+  $schema['begateway_payments'] = array(
+          'fields' => array(
+              'id' => array(
+                  'type' => 'serial',
+                  'unsigned' => true,
+                  'not null' => true,
+                  'length' => 11
+              ),
+              'created' => array(
+                  'type' => 'varchar',
+                  'length' => 50,
+              ),
+              'uid' => array(
+                  'type' => 'int',
+                  'length' => 10,
+              ),
+              'price' => array(
+                  'type' => 'varchar',
+                  'length' => 50,
+              ),
+              'parent_uid' => array(
+                  'type' => 'varchar',
+                  'length' => 30,
+              ),
+              'token' => array(
+                 'type' => 'varchar',
+                 'length' => 100,
+              ),
+              'status' => array(
+                  'type' => 'varchar',
+                  'length' => 50,
+                  'default'=>'pending',
+              ),
+               'types' => array(
+                  'type' => 'varchar',
+                  'length' => 50,
+               ),
+               'flag' => array(
+                 'type' => 'varchar',
+                 'length' => 10,
+                  ),
+               'order_id' => array(
+                  'type' => 'varchar',
+                  'length' => 10,
+                ),
+          ),
+          'primary key' => array('id'),
+          'mysql_engine' => 'InnoDB'
+      );
+
+  return $schema;
+}
+
+
+

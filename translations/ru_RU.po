@@ -1,0 +1,126 @@
+msgid "Operation"
+msgstr "Операция"
+
+msgid "Order Id"
+msgstr "Id заказа"
+
+msgid "Order"
+msgstr "Заказ"
+
+msgid "Order amount: @amount"
+msgstr "Сумма заказа: @amount"
+
+msgid "Commerce order: @id"
+msgstr "Commerce заказ: @id"
+
+msgid "Created"
+msgstr "Создан"
+
+msgid "Name/Email"
+msgstr "Имя/Email"
+
+msgid "Remote uid"
+msgstr "Удаленный uid"
+
+msgid "Price"
+msgstr "Цена"
+
+msgid "Type"
+msgstr "Тип"
+
+msgid "Status"
+msgstr "Статус"
+
+msgid "Operation"
+msgstr "Операция"
+
+msgid "payment"
+msgstr "оплата"
+
+msgid "Payment"
+msgstr "Оплата"
+
+msgid "authorization"
+msgstr "авторизация"
+
+msgid "Authorization"
+msgstr "Авторизация"
+
+msgid "Void"
+msgstr "Аннулировать"
+
+msgid "Refunded"
+msgstr "Возвращенно"
+
+msgid "pending"
+msgstr "обработка"
+
+msgid "paid"
+msgstr "оплаченно"
+
+msgid "Refund"
+msgstr "Возвратить"
+
+msgid "Capture"
+msgstr "Захватить"
+
+msgid "Captured"
+msgstr "Захваченно"
+
+msgid "Display payment name"
+msgstr "Имя оплаты для показа"
+
+msgid "Shop ID"
+msgstr "Идентификационный номер магазина"
+
+msgid "Shop Key"
+msgstr "Секретный ключ магазина"
+
+msgid "Payment gateway domain"
+msgstr "Домен платежного шлюза"
+
+msgid "Checkout page domain"
+msgstr "Домен платежной страницы"
+
+msgid "Type transaction"
+msgstr "Тип транзакции"
+
+msgid "Checkout page domain"
+msgstr "Домен платежной страницы"
+
+msgid "Refund amount (Capture amount: @total )"
+msgstr "Сумма возврата (Сумма захвата: @total )"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Are you sure you want to issue a refund?"
+msgstr "Вы уверены, что хотите оформить возврат?"
+
+msgid "You must specify a positive numeric amount to refund."
+msgstr "Вы должны указать положительное числовое значение."
+
+msgid "You cannot refund more than you payed through beGateway."
+msgstr "Вы не можете вернуть больше, чем вы заплатили через beGateway."
+
+msgid "Capture amount (Order amount: @total)"
+msgstr "Сумма захвата (Сумма заказа: @total)"
+
+msgid "Are you sure you want to issue a capture?"
+msgstr "Вы уверены, что хотите оформить захват?"
+
+msgid "You must specify a positive numeric amount to captured."
+msgstr "Вы должны указать положительное числовое значение."
+
+msgid "You cannot capture more than it was authorized through beGateway."
+msgstr "Вы не можете захватить больше, чем было разрешено через beGateway."
+
+msgid "Are you sure you want to issue a void?"
+msgstr "Вы уверены, что хотите аннулировать заказ?"
+
+msgid "Void amount"
+msgstr "Сумма аннулирования"
+
+msgid "There are no orders yet. Please create one."
+msgstr "Заказов пока нет. Пожалуйста, создайте один."
+
