@@ -2,10 +2,10 @@
 
 ## Установка
 
-  * (Скачайте)[https://github.com/beGateway/drupal-commerce-payment-module/blob/master/begateway_payment.zip?raw=true] архив с модулем и распакуйте его
+  * [Скачайте](https://github.com/beGateway/drupal-commerce-payment-module/blob/master/begateway_payment.zip?raw=true) архив с модулем и распакуйте его
   * Папку `begateway_payment ` с модулем положите в `sites/all/modules`
-  * Убедитесь, что Drupal модуль (libraries)[https://www.drupal.org/project/libraries] установлен и включен
-  * (Скачайте)[https://github.com/beGateway/drupal-commerce-payment-module/blob/master/begateway_library.zip?raw=true] архив библиотеки и раскакуйте его
+  * Убедитесь, что Drupal модуль [libraries](https://www.drupal.org/project/libraries) установлен и включен
+  * [Скачайте](https://github.com/beGateway/drupal-commerce-payment-module/blob/master/begateway_library.zip?raw=true) архив библиотеки и раскакуйте его
   * Папку `beGateway` библиотеки положите в `sites/all/libraries`
   * Включите модуль `beGateway payment` в Drupal
   * Настройка модуля находятся в `/admin/commerce/config/payment-methods`
@@ -33,10 +33,10 @@
 
 ## Installation
 
-  * (Download)[https://github.com/beGateway/drupal-commerce-payment-module/blob/master/begateway_payment.zip?raw=true] module archive and unpack it
+  * [Download](https://github.com/beGateway/drupal-commerce-payment-module/blob/master/begateway_payment.zip?raw=true) module archive and unpack it
   * Put the directory `begateway_payment ` to `sites/all/modules`
-  * Make sure the Drupal module (libraries)[https://www.drupal.org/project/libraries] is installed and enabled
-  * (Download)[https://github.com/beGateway/drupal-commerce-payment-mdule/blob/master/begateway_library.zip?raw=true] library archive and unpack it
+  * Make sure the Drupal module [libraries](https://www.drupal.org/project/libraries) is installed and enabled
+  * [Download](https://github.com/beGateway/drupal-commerce-payment-mdule/blob/master/begateway_library.zip?raw=true) library archive and unpack it
   * Put the `beGateway` directory to `sites/all/libraries`
   * Enable the `beGateway payment` module
 
