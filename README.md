@@ -1,15 +1,15 @@
-# Модуль оплаты beGateway для  Drupal Commerce
+# Модуль оплаты beGateway для Drupal Commerce
 
 ## Установка
 
-* Папку с модулем положите в (sites/all/modules/begateway_payment)
-
-* В папку (sites / all / libraries / beGateway) положите библиотеку
- [download url] (https://github.com/beGateway/begateway-api-php)
-
-* Настройка вашего модуля находиться в /admin/commerce/config/payment-methods
-
-* Список заказов и работа c транзакциями находиться в /admin/config/begateway_payment/orders
+  * (Скачайте)[] архив с модулем и распакуйте его
+  * Папку `begateway_payment ` с модулем положите в `sites/all/modules`
+  * Убедитесь, что Drupal модуль (libraries)[https://www.drupal.org/project/libraries] установлен и включен
+  * (Скачайте)[] архив библиотеки и раскакуйте его
+  * Папку `beGateway` библиотеки положите в `sites/all/libraries`
+  * Включите модуль `beGateway payment` в Drupal
+  * Настройка модуля находятся в `/admin/commerce/config/payment-methods`
+  * Список заказов и работа c транзакциями находятся в `/admin/config/begateway_payment/orders`
 
 
 ### Вы можете использовать следующие данные, чтобы настроить способ оплаты в тестовом режиме
