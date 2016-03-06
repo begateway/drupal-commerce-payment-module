@@ -1,5 +1,7 @@
 <?php
-
+require_once(dirname(__FILE__) . '/include/begateway_payment.capture.inc');
+require_once(dirname(__FILE__) . '/include/begateway_payment.refund.inc');
+require_once(dirname(__FILE__) . '/include/begateway_payment.void.inc');
 /**
  * Implements hook_menu().
  *
@@ -43,7 +45,6 @@ function begateway_payment_menu() {
   return $items;
 }
 
-
 /**
  * Build page with table.
  *
@@ -77,7 +78,6 @@ function begateway_payment_table() {
     'types',
     'parent_uid'
   ))->execute();
-
 
   while ($value = $query->fetchAssoc()) {
 
@@ -168,395 +168,6 @@ function begateway_payment_form_alter(&$form, &$form_state, $form_id) {
   }
 }
 
-
-/**
- * Refund confirmation transaction.
- *
- * @param $form
- * @param $form_state
- * @param $order_id
- * @return array
- */
-function begateway_refund_form($form, &$form_state, $order_id) {
-
-  $form_state['order_id'] = $order_id;
-  $query = db_select('begateway_payments', 't')->fields('t', array(
-    'id',
-    'parent_uid',
-    'price',
-    'flag',
-    'status',
-    'order_id'
-  ))->condition('t.id', $order_id)->execute();
-  $value = $query->fetchAssoc();
-
-  $ow = entity_metadata_wrapper('commerce_order', $value['order_id']);
-  $order_total = $ow->commerce_order_total->value();
-
-  $form = array();
-  if ($value['flag'] == 2) {
-    $form['amount'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Refund amount (Capture amount: @total )', array('@total' => commerce_currency_amount_to_decimal($value['price'], $order_total['currency_code']) . ' ' . $order_total['currency_code'])),
-      '#default_value' => commerce_currency_amount_to_decimal($value['price'], $order_total['currency_code']),
-      '#size' => 16,
-    );
-  }
-  else {
-    $form['amount'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Refund amount (Capture amount: @total )', array('@total' => commerce_currency_amount_to_decimal($value['price'], $order_total['currency_code']) . ' ' . $order_total['currency_code'])),
-      '#default_value' => commerce_currency_amount_to_decimal($order_total['amount'], $order_total['currency_code']),
-      '#size' => 16,
-    );
-  }
-  $form = confirm_form($form, t('Are you sure you want to issue a refund?'), '/admin/config/begateway_payment/orders', '', t('Refund'), t('Cancel'), 'confirm');
-
-  return $form;
-}
-
-
-/**
- * Refund transaction validate.
- */
-function begateway_refund_form_validate($form, &$form_state) {
-
-  $id = $form_state['order_id'];
-
-  $query = db_select('begateway_payments', 't')->fields('t', array(
-    'id',
-    'parent_uid',
-    'price',
-    'status',
-    'order_id'
-  ))->condition('t.id', $id)->execute();
-  $value = $query->fetchAssoc();
-
-
-  if (!is_numeric($form['amount']['#value']) || $form['amount']['#value'] <= 0) {
-    form_set_error('amount', t('You must specify a positive numeric amount to refund.'));
-    return FALSE;
-  }
-
-  if ($form['amount']['#value'] * 100 > $value['price']) {
-    form_set_error('amount', t('You cannot refund more than you payed through beGateway.'));
-    return FALSE;
-  }
-
-}
-
-
-/**
- * Refund transaction.
- *
- * @param $form
- * @param $form_state
- */
-function begateway_refund_form_submit($form, &$form_state) {
-
-  $id = $form_state['order_id'];
-
-  $query = db_select('begateway_payments', 't')->fields('t', array(
-    'id',
-    'parent_uid',
-    'price',
-    'status',
-    'order_id',
-  ))->condition('t.id', $id)->execute();
-  $value = $query->fetchAssoc();
-
-  libraries_load('beGateway');
-
-  $payment = commerce_payment_method_instance_load('begateway|commerce_payment_begateway');
-  $ow = entity_metadata_wrapper('commerce_order', $value['order_id']);
-  \beGateway\Settings::$shopKey = $payment['settings']['begateway_shop_key'];
-  \beGateway\Settings::$shopId = $payment['settings']['begateway_shop_id'];
-  \beGateway\Settings::$gatewayBase = 'https://' . $payment['settings']['begateway_payment_gateway_url'];
-  \beGateway\Settings::$checkoutBase = 'https://' . $payment['settings']['begateway_checkout_page_url'];
-
-  $price = $form['amount']['#value'] * 100;
-
-  $refund = new \beGateway\Refund;
-  $refund->setParentUid($value['parent_uid']);
-  $refund->money->setAmount($price / 100);
-  $refund->setReason('customer request');
-
-  $refund_response = $refund->submit();
-
-  if ($refund_response->isSuccess()) {
-    db_update('begateway_payments')->fields(array(
-      'status' => 'Refunded',
-      'price' => $value['price'] - $price,
-      'parent_uid' => $refund_response->getUid(),
-      'flag' => 0,
-    ))->condition('id', $id)->execute();
-
-    $transaction = commerce_payment_transaction_new('begateway', $value['order_id']);
-    $transaction->amount = -1 * $price;
-    $transaction->currency_code = $ow->commerce_order_total->currency_code->value();
-    $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    $transaction->remote_status = 'Refunded';
-    $transaction->remote_id = $refund_response->getUid();
-    $transaction->message = t('The payment has refunded.');
-
-    drupal_set_message("Refund message: " . $refund_response->getMessage() . PHP_EOL);
-    commerce_payment_transaction_save($transaction);
-
-  }
-  else {
-    drupal_set_message("Capture successfuly" . PHP_EOL . "Refund message: " . $refund_response->getMessage() . PHP_EOL, 'error');
-  }
-
-  drupal_goto('/admin/config/begateway_payment/orders');
-
-}
-
-
-/**
- * Capture confirmation transaction.
- *
- * @param $form
- * @param $form_state
- * @param $order_id
- * @return array
- */
-function begateway_capture_form($form, &$form_state, $order_id) {
-
-  $form_state['order_id'] = $order_id;
-  $query = db_select('begateway_payments', 't')->fields('t', array(
-    'id',
-    'parent_uid',
-    'price',
-    'status',
-    'order_id'
-  ))->condition('t.id', $order_id)->execute();
-  $value = $query->fetchAssoc();
-
-  $ow = entity_metadata_wrapper('commerce_order', $value['order_id']);
-
-  $order_total = $ow->commerce_order_total->value();
-  $form = array();
-  $form['amount'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Capture amount (Order amount: @total)', array('@total' => commerce_currency_amount_to_decimal($order_total['amount'], $order_total['currency_code']) . ' ' . $order_total['currency_code'])),
-    '#default_value' => commerce_currency_amount_to_decimal($value['price'], $order_total['currency_code']),
-    '#size' => 16,
-  );
-  $form = confirm_form($form, t('Are you sure you want to issue a capture?'), '/admin/config/begateway_payment/orders', '', t('Capture'), t('Cancel'), 'confirm');
-
-  return $form;
-}
-
-
-/**
- * Capture transaction validate.
- *
- * @param $form
- * @param $form_state
- * @return bool
- */
-function begateway_capture_form_validation($form, &$form_state) {
-
-  $id = $form_state['order_id'];
-
-  $query = db_select('begateway_payments', 't')->fields('t', array(
-    'id',
-    'parent_uid',
-    'price',
-    'status',
-    'order_id'
-  ))->condition('t.id', $id)->execute();
-  $value = $query->fetchAssoc();
-
-  if (!is_numeric($form['amount']['#value']) || $form['amount']['#value'] <= 0) {
-    form_set_error('amount', t('You must specify a positive numeric amount to captured.'));
-    return FALSE;
-  }
-
-  if ($form['amount']['#value'] * 100 > $value['price']) {
-    form_set_error('amount', t('You cannot capture more than it was authorized through beGateway.'));
-    return FALSE;
-  }
-
-}
-
-
-/**
- * Capture transaction.
- *
- * @param $form
- * @param $form_state
- */
-function begateway_capture_form_submit($form, &$form_state) {
-
-  $id = $form_state['order_id'];
-
-  libraries_load('beGateway');
-  $price = $form['amount']['#value'] * 100;
-  $payment = commerce_payment_method_instance_load('begateway|commerce_payment_begateway');
-
-  \beGateway\Settings::$shopKey = $payment['settings']['begateway_shop_key'];
-  \beGateway\Settings::$shopId = $payment['settings']['begateway_shop_id'];
-  \beGateway\Settings::$gatewayBase = 'https://' . $payment['settings']['begateway_payment_gateway_url'];
-  \beGateway\Settings::$checkoutBase = 'https://' . $payment['settings']['begateway_checkout_page_url'];
-
-  $query = db_select('begateway_payments', 't')->fields('t', array(
-    'id',
-    'parent_uid',
-    'price',
-    'flag',
-    'status',
-    'order_id',
-  ))->condition('t.id', $id)->execute();
-
-
-  $value = $query->fetchAssoc();
-  $ow = entity_metadata_wrapper('commerce_order', $value['order_id']);
-  $capture = new \beGateway\Capture;
-  $capture->setParentUid($value['parent_uid']);
-  $capture->money->setAmount($price / 100);
-
-  $capture_response = $capture->submit();
-  if ($capture_response->isSuccess()) {
-
-    $flag = 2;
-
-    if ($value['flag'] == 2) {
-      $flag = 0;
-    }
-
-    db_update('begateway_payments')->fields(array(
-      'status' => 'Captured',
-      'price' => $price,
-      'parent_uid' => $capture_response->getUid(),
-      'flag' => $flag,
-    ))->condition('id', $id)->execute();
-
-    $transaction = commerce_payment_transaction_new('begateway', $value['order_id']);
-    $transaction->amount = $price;
-    $transaction->currency_code = $ow->commerce_order_total->currency_code->value();
-    $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    $transaction->remote_status = 'Captured';
-    $transaction->remote_id = $capture_response->getUid();
-    $transaction->message = t('The payment has captured.');
-    commerce_payment_transaction_save($transaction);
-    $ow = entity_metadata_wrapper('commerce_order', $value['order_id']);
-    $ow->status = 'completed';
-    $ow->save();
-
-    drupal_set_message("Capture message: " . $capture_response->getMessage() . PHP_EOL);
-
-  }
-  else {
-    drupal_set_message("Capture error" . PHP_EOL . "Refund message: " . $capture_response->getMessage() . PHP_EOL, 'error');
-  }
-
-  drupal_goto('/admin/config/begateway_payment/orders');
-
-}
-
-
-/**
- * Void confirmation transaction.
- *
- * @param $form
- * @param $form_state
- * @param $order_id
- * @return array
- */
-function begateway_void_form($form, &$form_state, $order_id) {
-  $form_state['order_id'] = $order_id;
-  $query = db_select('begateway_payments', 't')->fields('t', array(
-    'id',
-    'parent_uid',
-    'price',
-    'status',
-    'order_id'
-  ))->condition('t.id', $order_id)->execute();
-  $value = $query->fetchAssoc();
-
-  $ow = entity_metadata_wrapper('commerce_order', $value['order_id']);
-  $order_total = $ow->commerce_order_total->value();
-
-  $form = array();
-  $form['amount'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Void amount') . ', ' . $order_total['currency_code'],
-    '#attributes' => array('disabled' => 'disabled'),
-    '#default_value' => commerce_currency_amount_to_decimal($value['price'], $order_total['currency_code']),
-    '#size' => 16,
-  );
-  $form = confirm_form($form, t('Are you sure you want to issue a void?'), '/admin/config/begateway_payment/orders', '', t('Void'), t('Cancel'), 'confirm');
-
-  return $form;
-
-}
-
-/**
- * Void transaction.
- *
- * @param $form
- * @param $form_state
- */
-function begateway_void_form_submit($form, &$form_state) {
-
-  $id = $form_state['order_id'];
-  libraries_load('beGateway');
-
-  $payment = commerce_payment_method_instance_load('begateway|commerce_payment_begateway');
-
-  \beGateway\Settings::$shopKey = $payment['settings']['begateway_shop_key'];
-  \beGateway\Settings::$shopId = $payment['settings']['begateway_shop_id'];
-  \beGateway\Settings::$gatewayBase = 'https://' . $payment['settings']['begateway_payment_gateway_url'];
-  \beGateway\Settings::$checkoutBase = 'https://' . $payment['settings']['begateway_checkout_page_url'];
-
-  $query = db_select('begateway_payments', 't')->fields('t', array(
-    'id',
-    'parent_uid',
-    'price',
-    'status',
-    'order_id',
-  ))->condition('t.id', $id)->execute();
-
-  $value = $query->fetchAssoc();
-
-  $ow = entity_metadata_wrapper('commerce_order', $value['order_id']);
-  $price = $form['amount']['#value'] * 100;
-
-  $void = new \beGateway\Void;
-  $void->setParentUid($value['parent_uid']);
-  $void->money->setAmount($value['price'] / 100);
-  $void_response = $void->submit();
-
-  if ($void_response->isSuccess()) {
-
-    db_update('begateway_payments')->fields(array(
-      'status' => 'Void',
-      'parent_uid' => $void_response->getUid(),
-      'flag' => '0',
-    ))->condition('id', $id)->execute();
-
-    $transaction = commerce_payment_transaction_new('begateway', $value['order_id']);
-    $transaction->amount = $price;
-    $transaction->currency_code = $ow->commerce_order_total->currency_code->value();
-    $transaction->status = COMMERCE_PAYMENT_STATUS_FAILURE;
-    $transaction->remote_status = 'Void';
-    $transaction->remote_id = $void_response->getUid();
-    $transaction->message = t('The payment has void.');
-    commerce_payment_transaction_save($transaction);
-
-
-    $ow->status = 'canceled';
-    $ow->save();
-
-    drupal_set_message("Void successfuly" . PHP_EOL . "Refund message: " . $void_response->getMessage() . PHP_EOL);
-
-  }
-
-  drupal_goto('/admin/config/begateway_payment/orders');
-}
-
-
 /**
  * Returns the default settings for the PayLeap AIM payment method.
  *
@@ -573,7 +184,6 @@ function commerce_begateway_default_settings() {
   );
 }
 
-
 /**
  * Implements hook_commerce_payment_method_info().
  *
@@ -581,7 +191,7 @@ function commerce_begateway_default_settings() {
  */
 function begateway_payment_commerce_payment_method_info() {
 
-  $payment = commerce_payment_method_instance_load('begateway|commerce_payment_begateway');
+  $payment = begateway_payment_method_load();
 
   return array(
     'begateway' => array(
@@ -595,7 +205,6 @@ function begateway_payment_commerce_payment_method_info() {
     ),
   );
 }
-
 
 /**
  * Payment method callback: settings form.
@@ -643,14 +252,13 @@ function begateway_settings_form($settings = NULL) {
     '#title' => t('Type transaction'),
     '#default_value' => $settings['type_transaction'],
     '#options' => array(
-      t('Authorization'),
       t('Payment'),
+      t('Authorization'),
     )
   );
 
   return $form;
 }
-
 
 /**
  * Payment method callback: payment redirect form.
@@ -666,81 +274,77 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
   global $language;
 
   $ow = entity_metadata_wrapper('commerce_order', $order->order_id);
-  $ow2 = $ow->commerce_customer_billing->value();
+  $balance = commerce_payment_order_balance($order);
 
-  libraries_load('beGateway');
+  // Prepare the billing address for use in the request.
+  $billing_address = $ow->commerce_customer_billing->commerce_customer_address->value();
 
-  $payment = commerce_payment_method_instance_load('begateway|commerce_payment_begateway');
+  if (empty($billing_address['first_name'])) {
+    $name_parts = explode(' ', $billing_address['name_line']);
+    $billing_address['first_name'] = array_shift($name_parts);
+    $billing_address['last_name'] = implode(' ', $name_parts);
+  }
 
-  \beGateway\Settings::$shopKey = $payment['settings']['begateway_shop_key'];
-  \beGateway\Settings::$shopId = $payment['settings']['begateway_shop_id'];
-  \beGateway\Settings::$gatewayBase = 'https://' . $payment['settings']['begateway_payment_gateway_url'];
-  \beGateway\Settings::$checkoutBase = 'https://' . $payment['settings']['begateway_checkout_page_url'];
+
+  $settings = begateway_payment_method_load($payment_method);
+  $settings = $settings['settings'];
 
   $transaction = new \beGateway\GetPaymentToken;
 
-  if ($payment['settings']['type_transaction'] != 0) {
-    $transaction->setPaymentTransactionType();
-  }
-  else {
+  if ($settings['type_transaction'] != 0) {
     $transaction->setAuthorizationTransactionType();
   }
+  else {
+    $transaction->setPaymentTransactionType();
+  }
 
-  $transaction->money->setAmount($order->commerce_order_total[LANGUAGE_NONE][0]['amount'] / 100);
-  $transaction->money->setCurrency($order->commerce_order_total[LANGUAGE_NONE][0]['data']['components'][1]['price']['currency_code']);
+  $notification_url = url('begateway_payment/route/' . $order->order_number, array('absolute' => TRUE));
+  $notification_url = str_replace('carts.local', 'webhook.begateway.com:8443', $notification_url);
+  $cancel_url = url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE));
+
+  $transaction->money->setCents($balance['amount']);
+  $transaction->money->setCurrency($balance['currency_code']);
   $transaction->setDescription(t('Order #') . $order->order_number);
-  $transaction->setLanguage(begateway_language($language->language));
-  $transaction->setNotificationUrl(url('begateway_payment/route/' . $order->order_number, array('absolute' => TRUE)));
+  $transaction->setLanguage($language->language);
+  $transaction->setNotificationUrl($notification_url);
   $transaction->setSuccessUrl(url('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
   $transaction->setDeclineUrl(url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
   $transaction->setFailUrl(url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
-  $transaction->setCancelUrl(url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
-  $transaction->customer->setFirstName($ow2->commerce_customer_address[LANGUAGE_NONE][0]['first_name']);
-  $transaction->customer->setLastName($ow2->commerce_customer_address[LANGUAGE_NONE][0]['last_name']);
-  $transaction->customer->setCountry($ow2->commerce_customer_address[LANGUAGE_NONE][0]['country']);
-  $transaction->customer->setAddress($ow2->commerce_customer_address[LANGUAGE_NONE][0]['thoroughfare']);
-  $transaction->customer->setCity($ow2->commerce_customer_address[LANGUAGE_NONE][0]['locality']);
-  $transaction->customer->setZip($ow2->commerce_customer_address[LANGUAGE_NONE][0]['postal_code']);
-  $transaction->customer->setIp($_SERVER['REMOTE_ADDR']);
+  $transaction->setCancelUrl($cancel_url);
+  $transaction->setTrackingId($order->order_id);
+  $transaction->customer->setFirstName($billing_address['first_name']);
+  $transaction->customer->setLastName($billing_address['last_name']);
+  $transaction->customer->setCountry($billing_address['country']);
+  $transaction->customer->setAddress($billing_address['thoroughfare']);
+  $transaction->customer->setCity($billing_address['locality']);
+  $transaction->customer->setZip($billing_address['postal_code']);
   $transaction->customer->setEmail($ow->mail->value());
+
+  if (in_array($billing_address['country'], array('US', 'CA'))) {
+    $transaction->customer->setState($billing_address['administrative_area']);
+  }
+
+  $transaction->setEmailReadonly();
   $transaction->setAddressHidden();
 
   $response2 = $transaction->submit();
 
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#weight' => 100,
-    '#value' => t('Go to payment '),
-  );
+  if ($response2->isSuccess()) {
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#weight' => 100,
+      '#value' => t('Go to payment '),
+    );
 
-  $form['#action'] = $response2->getRedirectUrl();
-
+    $form['#action'] = $response2->getRedirectUrl();
+  } else {
+    watchdog('commerce_payment_begateway', 'The website failed to get a payment token', array(), WATCHDOG_ERROR);
+    drupal_set_message(t('The payment gateway is currently unavailable, please chose another payment method, or contact an administrator.'), 'error');
+    drupal_set_message($response2->getMessage(),'error');
+    commerce_payment_redirect_pane_previous_page($order, t('The payment gateway is currently unavailable, please chose another payment method, or contact an administrator.'));
+  }
   return $form;
 }
-
-function begateway_language($lang_id) {
-  $languages = array(
-    'en',
-    'es',
-    'tr',
-    'de',
-    'it',
-    'ru',
-    'zh',
-    'fr',
-    'da',
-    'sv',
-    'no',
-    'fi'
-  );
-  if (in_array($lang_id, $languages)) {
-    return $lang_id;
-  }
-  else {
-    return 'en';
-  }
-}
-
 
 /**
  * Handling Notification_URL.
@@ -752,17 +356,11 @@ function begateway_payment_notification() {
 
   $ow = entity_metadata_wrapper('commerce_order', $order_id);
 
-  libraries_load('beGateway');
-  $payment = commerce_payment_method_instance_load('begateway|commerce_payment_begateway');
-
-  \beGateway\Settings::$shopKey = $payment['settings']['begateway_shop_key'];
-  \beGateway\Settings::$shopId = $payment['settings']['begateway_shop_id'];
-  \beGateway\Settings::$gatewayBase = 'https://' . $payment['settings']['begateway_payment_gateway_url'];
-  \beGateway\Settings::$checkoutBase = 'https://' . $payment['settings']['begateway_checkout_page_url'];
+  $payment = begateway_payment_method_load();
 
   $webhook = new \beGateway\Webhook;
 
-  if ($webhook->isSuccess()) {
+  if ($webhook->isSuccess() && (int)$webhook->getTrackingId() == (int)$order_id) {
 
     $transaction = commerce_payment_transaction_new('begateway', $order_id);
     $transaction->instance_id = $payment['instance_id'];
@@ -770,35 +368,21 @@ function begateway_payment_notification() {
     $transaction->currency_code = $ow->commerce_order_total->currency_code->value();
 
     if ($payment['settings']['type_transaction'] != 0) {
+      $transaction->remote_status = 'pending';
+      $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
+    }
+    else {
       $transaction->remote_status = 'paid';
       $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
       $ow->status = 'completed';
       $ow->save();
     }
-    else {
-      $transaction->remote_status = 'pending';
-      $transaction->status = COMMERCE_PAYMENT_STATUS_PENDING;
-    }
 
     $transaction->remote_id = $webhook->getUid();
-    $transaction->message = t('The payment has completed.');
+    $transaction->message = t('The payment has been completed.');
     commerce_payment_transaction_save($transaction);
 
     if ($payment['settings']['type_transaction'] != 0) {
-
-      $query = db_insert('begateway_payments')->fields(array(
-        'order_id' => $order_id,
-        'created' => time(),
-        'uid' => $ow->uid->value(),
-        'price' => $ow->commerce_order_total->amount->value(),
-        'parent_uid' => $webhook->getUid(),
-        'status' => 'paid',
-        'types' => 'payment',
-        'flag' => '1',
-      ))->execute();
-
-    }
-    else {
       $query = db_insert('begateway_payments')->fields(array(
         'order_id' => $order_id,
         'created' => time(),
@@ -809,12 +393,60 @@ function begateway_payment_notification() {
         'types' => 'authorization',
         'flag' => '1',
       ))->execute();
-
     }
-
+    else {
+      $query = db_insert('begateway_payments')->fields(array(
+        'order_id' => $order_id,
+        'created' => time(),
+        'uid' => $ow->uid->value(),
+        'price' => $ow->commerce_order_total->amount->value(),
+        'parent_uid' => $webhook->getUid(),
+        'status' => 'paid',
+        'types' => 'payment',
+        'flag' => '1',
+      ))->execute();
+    }
   }
 }
 
+/**
+* load payment method
+**/
+function begateway_payment_method_load($payment_method = NULL) {
+
+  libraries_load('beGateway');
+
+  $payment = $payment_method;
+
+  if ($payment_method == NULL) {
+    $payment = commerce_payment_method_instance_load('begateway|commerce_payment_begateway');
+
+    if (!isset($payment['settings']['begateway_shop_id'])) {
+      $payment = commerce_payment_method_instance_load('begateway|rules_begateway');
+    }
+  }
+  \beGateway\Settings::$shopKey = $payment['settings']['begateway_shop_key'];
+  \beGateway\Settings::$shopId = $payment['settings']['begateway_shop_id'];
+  \beGateway\Settings::$gatewayBase = 'https://' . $payment['settings']['begateway_payment_gateway_url'];
+  \beGateway\Settings::$checkoutBase = 'https://' . $payment['settings']['begateway_checkout_page_url'];
+
+  return $payment;
+}
+
+function begateway_get_order($order_id) {
+
+  $query = db_select('begateway_payments', 't')->fields('t', array(
+    'id',
+    'parent_uid',
+    'price',
+    'flag',
+    'status',
+    'order_id'
+  ))->condition('t.id', (int)$order_id)->execute();
+  $value = $query->fetchAssoc();
+
+  return $value;
+}
 
 /**
  * Implements hook_libraries_info().
@@ -838,4 +470,3 @@ function begateway_payment_libraries_info() {
   );
   return $libraries;
 }
-
