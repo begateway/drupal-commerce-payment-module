@@ -162,3 +162,6 @@ msgstr "Ошибка возврата средств:"
 
 msgid "The payment has been completed."
 msgstr "Оплата успешна."
+
+msgid "Void error:"
+msgstr "Ошибка отмены авторизации:"
