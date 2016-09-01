@@ -1,4 +1,4 @@
-    <?php
+<?php
 
 /**
  * @file
@@ -31,7 +31,6 @@ function begateway_payment_requirements($phase) {
   return $requirements;
 }
 
-
 /**
  * Implements hook_schema().
  */
@@ -50,8 +49,12 @@ function begateway_payment_schema() {
                   'length' => 50,
               ),
               'uid' => array(
-                  'type' => 'int',
-                  'length' => 10,
+                  'type' => 'varchar',
+                  'length' => 40,
+              ),
+              'payment_method' => array(
+                  'type' => 'varchar',
+                  'length' => 30,
               ),
               'price' => array(
                   'type' => 'varchar',
@@ -90,5 +93,43 @@ function begateway_payment_schema() {
   return $schema;
 }
 
+function begateway_payment_update_7100() {
+    db_add_field('begateway_payments',
+                  'payment_method',
+                  array(
+                    'type' => 'varchar',
+                    'length' => 30,
+                    'description' => 'Store payment method of payment.'
+                  ));
+    db_add_field('begateway_payments',
+                  'uid2',
+                  array(
+                    'type' => 'varchar',
+                    'length' => 40,
+                    'description' => 'Store UID of payment.'
+                  ));
 
+    $payments = db_select('begateway_payments', 'bp')
+      ->fields('bp', array('id', 'uid'))
+      ->execute();
 
+    foreach ($payments as $payment) {
+      db_update('begateway_payments')
+        ->fields(array('uid2' => $payment->uid))
+        ->condition('id', $payment->id)
+        ->execute();
+    }
+
+    db_drop_field('begateway_payments', 'uid');
+
+    db_change_field('begateway_payments',
+                    'uid2',
+                    'uid',
+                    array()
+                   );
+}
+
+function begateway_payment_update_7101() {
+  db_update('begateway_payments')
+    ->fields(array('payment_method' => 'credit_card'));
+}
