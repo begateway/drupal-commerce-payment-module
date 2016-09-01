@@ -58,7 +58,8 @@ function begateway_payment_table() {
     t('Order Id'),
     t('Created'),
     t('Name/Email'),
-    t('Remote uid'),
+    t('Remote UID'),
+    t('Payment method'),
     t('Price'),
     t('Type'),
     t('Status'),
@@ -71,6 +72,7 @@ function begateway_payment_table() {
     'created',
     'uid',
     'parent_uid',
+    'payment_method',
     'price',
     'types',
     'status',
@@ -128,6 +130,11 @@ function begateway_payment_table() {
     $ow = entity_metadata_wrapper('commerce_order', $value['order_id']);
     $order_total = $ow->commerce_order_total->value();
     $user = entity_metadata_wrapper('user', $value['uid']);
+    $actions = l(t($title), $refund_capture_link) . '<br />' . l(t($title2), $void_link);
+
+    if ($value['payment_method'] != 'credit_card') {
+      $actions = t('Not available');
+    }
 
     $rows[] = array(
       $value['id'],
@@ -135,10 +142,11 @@ function begateway_payment_table() {
       $date,
       l(t($user->name->value()), 'user/' . $user->uid->value()) . '<br />' . $user->mail->value(),
       $value['parent_uid'],
+      $value['payment_method'],
       'Order amount: ' . commerce_currency_format($order_total['amount'], $order_total['currency_code']),
       t($value['types']),
       t($value['status']),
-      l(t($title), $refund_capture_link) . '<br />' . l(t($title2), $void_link),
+      $actions
     );
 
   }
@@ -181,6 +189,9 @@ function commerce_begateway_default_settings() {
     'begateway_payment_gateway_url' => '',
     'begateway_checkout_page_url' => '',
     'type_transaction' => '',
+    'card_enable' => '0',
+    'erip_enable' => '1',
+    'erip_service_no' => '99999999'
   );
 }
 
@@ -256,6 +267,29 @@ function begateway_settings_form($settings = NULL) {
       t('Authorization'),
     )
   );
+  $form['card_enable'] = array(
+    '#type' => 'radios',
+    '#title' => t('Enable bankcard payments'),
+    '#default_value' => $settings['card_enable'],
+    '#options' => array(
+      t('Yes'),
+      t('No'),
+    )
+  );
+  $form['erip_enable'] = array(
+    '#type' => 'radios',
+    '#title' => t('Enable ERIP'),
+    '#default_value' => $settings['erip_enable'],
+    '#options' => array(
+      t('Yes'),
+      t('No'),
+    )
+  );
+  $form['erip_service_no'] = array(
+    '#type' => 'textfield',
+    '#title' => t('ERIP service No'),
+    '#default_value' => $settings['erip_service_no'],
+  );
 
   return $form;
 }
@@ -284,7 +318,6 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
     $billing_address['first_name'] = array_shift($name_parts);
     $billing_address['last_name'] = implode(' ', $name_parts);
   }
-
 
   $settings = begateway_payment_method_load($payment_method);
   $settings = $settings['settings'];
@@ -322,6 +355,20 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
 
   if (in_array($billing_address['country'], array('US', 'CA'))) {
     $transaction->customer->setState($billing_address['administrative_area']);
+  }
+
+  if ($settings['card_enable'] == 0) {
+    $cc = new \beGateway\PaymentMethod\CreditCard;
+    $transaction->addPaymentMethod($cc);
+  }
+
+  if ($settings['erip_enable'] == 0) {
+    $erip = new \beGateway\PaymentMethod\Erip(array(
+      'order_id' => $order->order_number,
+      'account_number' => strval($order->order_number),
+      'service_no' => $settings['erip_service_no']
+    ));
+    $transaction->addPaymentMethod($erip);
   }
 
   $transaction->setEmailReadonly();
@@ -379,7 +426,7 @@ function begateway_payment_notification() {
     }
 
     $transaction->remote_id = $webhook->getUid();
-    $transaction->message = t('The payment has been completed.');
+    $transaction->message = t('Payment method') . ': ' . $webhook->getPaymentMethod() . '. ' . t('The payment has been completed.');
     commerce_payment_transaction_save($transaction);
 
     if ($payment['settings']['type_transaction'] != 0) {
@@ -389,6 +436,7 @@ function begateway_payment_notification() {
         'uid' => $ow->uid->value(),
         'price' => $ow->commerce_order_total->amount->value(),
         'parent_uid' => $webhook->getUid(),
+        'payment_method' => $webhook->getPaymentMethod(),
         'status' => 'pending',
         'types' => 'authorization',
         'flag' => '1',
@@ -401,6 +449,7 @@ function begateway_payment_notification() {
         'uid' => $ow->uid->value(),
         'price' => $ow->commerce_order_total->amount->value(),
         'parent_uid' => $webhook->getUid(),
+        'payment_method' => $webhook->getPaymentMethod(),
         'status' => 'paid',
         'types' => 'payment',
         'flag' => '1',
@@ -438,6 +487,7 @@ function begateway_get_order($order_id) {
   $query = db_select('begateway_payments', 't')->fields('t', array(
     'id',
     'parent_uid',
+    'payment_method',
     'price',
     'flag',
     'status',

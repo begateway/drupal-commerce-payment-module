@@ -19,11 +19,14 @@ msgstr "Создан"
 msgid "Name/Email"
 msgstr "Имя/Email"
 
-msgid "Remote uid"
-msgstr "Удаленный uid"
+msgid "Remote UID"
+msgstr "UID платёжной системы"
 
 msgid "Price"
 msgstr "Цена"
+
+msgid "Payment method"
+msgstr "Способ оплаты"
 
 msgid "Type"
 msgstr "Тип"
