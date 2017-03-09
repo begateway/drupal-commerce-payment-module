@@ -94,21 +94,21 @@ function begateway_payment_table() {
       if ($value['types'] == 'authorization') {
 
         if ($value['status'] == 'successful' || $value['status'] == 'captured') {
-          $title = 'Refund';
+          $title = t('Refund');
           $refund_capture_link = 'admin/config/' . $value['id'] . '/begateway_payment/refund';
 
         }
         else {
-          $title = 'Capture';
+          $title = t('Capture');
           $refund_capture_link = 'admin/config/' . $value['id'] . '/begateway_payment/capture';
 
-          $title2 = 'Void';
+          $title2 = t('Void');
           $void_link = 'admin/config/' . $value['id'] . '/begateway_payment/void';
         }
 
       }
       else {
-        $title = 'Refund';
+        $title = t('Refund');
         $refund_capture_link = 'admin/config/' . $value['id'] . '/begateway_payment/refund';
 
       }
@@ -117,12 +117,12 @@ function begateway_payment_table() {
     if ($value['flag'] == '2') {
       $title2 = '';
       $void_link = '';
-      $title = 'Refund';
+      $title = t('Refund');
       $refund_capture_link = 'admin/config/' . $value['id'] . '/begateway_payment/refund';
     }
     elseif ($value['flag'] == '3') {
 
-      $title = 'Capture';
+      $title = t('Capture');
       $refund_capture_link = 'admin/config/' . $value['id'] . '/begateway_payment/capture';
 
     }
@@ -130,7 +130,7 @@ function begateway_payment_table() {
     $ow = entity_metadata_wrapper('commerce_order', $value['order_id']);
     $order_total = $ow->commerce_order_total->value();
     $user = entity_metadata_wrapper('user', $value['uid']);
-    $actions = l(t($title), $refund_capture_link) . '<br />' . l(t($title2), $void_link);
+    $actions = l($title, $refund_capture_link) . '<br />' . l($title2, $void_link);
 
     if ($value['payment_method'] != 'credit_card') {
       $actions = t('Not available');
@@ -140,7 +140,7 @@ function begateway_payment_table() {
       $value['id'],
       l(t('Commerce order: @id', array('@id' => $value['order_id'])), 'admin/commerce/orders/' . $value['order_id']),
       $date,
-      l(t($user->name->value()), 'user/' . $user->uid->value()) . '<br />' . $user->mail->value(),
+      l($user->name->value(), 'user/' . $user->uid->value()) . '<br />' . $user->mail->value(),
       $value['parent_uid'],
       $value['payment_method'],
       'Order amount: ' . commerce_currency_format($order_total['amount'], $order_total['currency_code']),
@@ -177,7 +177,7 @@ function begateway_payment_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Returns the default settings for the PayLeap AIM payment method.
+ * Returns the default settings for the beGateway payment method.
  *
  * @return array
  */
@@ -191,7 +191,8 @@ function commerce_begateway_default_settings() {
     'type_transaction' => '',
     'card_enable' => '0',
     'erip_enable' => '1',
-    'erip_service_no' => '99999999'
+    'erip_service_no' => '99999999',
+    'order_expiry_days' => '3'
   );
 }
 
@@ -266,6 +267,18 @@ function begateway_settings_form($settings = NULL) {
       t('Payment'),
       t('Authorization'),
     )
+  );
+
+  $days = array();
+  for ($i=1;$i<32;$i++) {
+    $days[$i] = $i;
+  }
+
+  $form['order_expiry_days'] = array(
+    '#type' => 'select',
+    '#title' => t('How many days order is valid for payment'),
+    '#options' => $days,
+    '#default_value' => $settings['order_expiry_days']
   );
   $form['card_enable'] = array(
     '#type' => 'radios',
@@ -345,6 +358,7 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
   $transaction->setFailUrl(url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
   $transaction->setCancelUrl($cancel_url);
   $transaction->setTrackingId($order->order_id);
+  $transaction->setExpiryDate(date("Y-m-d", ($settings['order_expiry_days']+1)*24*3600 + time()));
   $transaction->customer->setFirstName($billing_address['first_name']);
   $transaction->customer->setLastName($billing_address['last_name']);
   $transaction->customer->setCountry($billing_address['country']);
@@ -380,7 +394,7 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
     $form['submit'] = array(
       '#type' => 'submit',
       '#weight' => 100,
-      '#value' => t('Go to payment '),
+      '#value' => t('Go to payment'),
     );
 
     $form['#action'] = $response2->getRedirectUrl();
@@ -407,7 +421,7 @@ function begateway_payment_notification() {
 
   $webhook = new \beGateway\Webhook;
 
-  if ($webhook->isSuccess() && (int)$webhook->getTrackingId() == (int)$order_id) {
+  if ($webhook->isAuthorized() && $webhook->isSuccess() && (int)$webhook->getTrackingId() == (int)$order_id) {
 
     $transaction = commerce_payment_transaction_new('begateway', $order_id);
     $transaction->instance_id = $payment['instance_id'];
@@ -455,6 +469,10 @@ function begateway_payment_notification() {
         'flag' => '1',
       ))->execute();
     }
+  }
+  if ($webhook->getStatus() == 'expired' && (int)$webhook->getTrackingId() == (int)$order_id) {
+    $ow->status = 'canceled';
+    $ow->save();
   }
 }
 
