@@ -190,6 +190,7 @@ function commerce_begateway_default_settings() {
     'begateway_checkout_page_url' => '',
     'type_transaction' => '',
     'card_enable' => '0',
+    'card_halva_enable' => '1',
     'erip_enable' => '1',
     'erip_service_no' => '99999999',
     'order_expiry_days' => '3'
@@ -289,6 +290,15 @@ function begateway_settings_form($settings = NULL) {
       t('No'),
     )
   );
+  $form['card_halva_enable'] = array(
+    '#type' => 'radios',
+    '#title' => t('Enable Halva bankcard payments'),
+    '#default_value' => $settings['card_halva_enable'],
+    '#options' => array(
+      t('Yes'),
+      t('No'),
+    )
+  );
   $form['erip_enable'] = array(
     '#type' => 'radios',
     '#title' => t('Enable ERIP'),
@@ -374,6 +384,11 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
   if ($settings['card_enable'] == 0) {
     $cc = new \beGateway\PaymentMethod\CreditCard;
     $transaction->addPaymentMethod($cc);
+  }
+
+  if ($settings['card_halva_enable'] == 0) {
+    $halva = new \beGateway\PaymentMethod\CreditCardHalva;
+    $transaction->addPaymentMethod($halva);
   }
 
   if ($settings['erip_enable'] == 0) {
