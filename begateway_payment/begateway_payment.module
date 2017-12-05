@@ -401,7 +401,6 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
   }
 
   $transaction->setEmailReadonly();
-  $transaction->setAddressHidden();
 
   $response2 = $transaction->submit();
 
