@@ -3,10 +3,7 @@
 ## Установка
 
   * [Скачайте](https://github.com/beGateway/drupal-commerce-payment-module/blob/master/begateway_payment.zip?raw=true) архив с модулем и распакуйте его
-  * Папку `begateway_payment ` с модулем положите в `sites/all/modules`
-  * Убедитесь, что Drupal модуль [libraries](https://www.drupal.org/project/libraries) установлен и включен
-  * [Скачайте](https://github.com/beGateway/drupal-commerce-payment-module/blob/master/begateway_library.zip?raw=true) архив библиотеки и распакуйте его
-  * Папку `BeGateway` библиотеки положите в `sites/all/libraries`
+  * Папку `begateway_payment ` с модулем положите в `sites/all/modules` или воспользуйтесь установкой модуля с помощью __Установить новый модуль__ из администраторской зоны через страницу _Главная → Администрирование → Модули_
   * Включите модуль `BeGateway payment` в Drupal
   * Настройка модуля находятся в `/admin/commerce/config/payment-methods`
   * Список заказов и работа c транзакциями находятся в `/admin/config/begateway_payment/orders`
@@ -40,10 +37,7 @@
 ## Installation
 
   * [Download](https://github.com/beGateway/drupal-commerce-payment-module/blob/master/begateway_payment.zip?raw=true) module archive and unpack it
-  * Put the directory `begateway_payment ` to `sites/all/modules`
-  * Make sure the Drupal module [libraries](https://www.drupal.org/project/libraries) is installed and enabled
-  * [Download](https://github.com/beGateway/drupal-commerce-payment-mdule/blob/master/begateway_library.zip?raw=true) library archive and unpack it
-  * Put the `BeGateway` directory to `sites/all/libraries`
+  * Put the directory `begateway_payment ` to `sites/all/modules` or use `Install new module` link in _Home → Administration → Modules_
   * Enable the `BeGateway payment` module
 
 ## Testing

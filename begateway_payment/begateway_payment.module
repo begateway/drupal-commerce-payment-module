@@ -2,6 +2,7 @@
 require_once(dirname(__FILE__) . '/include/begateway_payment.capture.inc');
 require_once(dirname(__FILE__) . '/include/begateway_payment.refund.inc');
 require_once(dirname(__FILE__) . '/include/begateway_payment.void.inc');
+include_once(dirname(__FILE__) . '/lib/BeGateway.php');
 /**
  * Implements hook_menu().
  *
@@ -413,7 +414,7 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
   if ($settings['test_mode'] == 1) {
     $transaction->setTestMode();
   }
-  
+
   $response2 = $transaction->submit();
 
   if ($response2->isSuccess()) {
@@ -507,8 +508,6 @@ function begateway_payment_notification() {
 **/
 function begateway_payment_method_load($payment_method = NULL) {
 
-  libraries_load('BeGateway');
-
   $payment = $payment_method;
 
   if ($payment_method == NULL) {
@@ -540,27 +539,4 @@ function begateway_get_order($order_id) {
   $value = $query->fetchAssoc();
 
   return $value;
-}
-
-/**
- * Implements hook_libraries_info().
- *
- * @return mixed
- */
-function begateway_payment_libraries_info() {
-  $libraries['BeGateway'] = array(
-    'name' => 'BeGateway library php',
-    'vendor url' => 'https://github.com/begateway/begateway-api-php/tree/master',
-    'download url' => 'https://github.com/begateway/begateway-api-php/tree/master',
-    'version arguments' => array(
-      'file' => 'VERSION',
-      'pattern' => '/^(.+)/'
-    ),
-    'files' => array(
-      'php' => array(
-        'lib/BeGateway.php',
-      ),
-    ),
-  );
-  return $libraries;
 }
