@@ -29,8 +29,8 @@ function begateway_payment_menu() {
     'access callback' => TRUE,
   );
   $items['admin/config/begateway_payment/orders'] = array(
-    'title' => 'beGateway orders',
-    'description' => 'List of beGateway orders',
+    'title' => 'BeGateway orders',
+    'description' => 'List of BeGateway orders',
     'page callback' => 'begateway_payment_table',
     'access callback' => 'user_access',
     'access arguments' => array('administer begateway payments'),
@@ -177,13 +177,13 @@ function begateway_payment_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Returns the default settings for the beGateway payment method.
+ * Returns the default settings for the BeGateway payment method.
  *
  * @return array
  */
 function commerce_begateway_default_settings() {
   return array(
-    'begateway_name' => 'beGateway',
+    'begateway_name' => 'BeGateway',
     'begateway_shop_id' => '',
     'begateway_shop_key' => '',
     'begateway_payment_gateway_url' => '',
@@ -193,7 +193,8 @@ function commerce_begateway_default_settings() {
     'card_halva_enable' => '1',
     'erip_enable' => '1',
     'erip_service_no' => '99999999',
-    'order_expiry_days' => '3'
+    'order_expiry_days' => '3',
+    'test_mode' => '1'
   );
 }
 
@@ -208,9 +209,9 @@ function begateway_payment_commerce_payment_method_info() {
 
   return array(
     'begateway' => array(
-      'title' => isset($payment['settings']['begateway_name']) ? $payment['settings']['begateway_name'] : 'beGateway',
-      'display_title' => isset($payment['settings']['begateway_name']) ? $payment['settings']['begateway_name'] : 'beGateway',
-      'description' => isset($payment['settings']['begateway_name']) ? $payment['settings']['begateway_name'] : 'beGateway',
+      'title' => isset($payment['settings']['begateway_name']) ? $payment['settings']['begateway_name'] : 'BeGateway',
+      'display_title' => isset($payment['settings']['begateway_name']) ? $payment['settings']['begateway_name'] : 'BeGateway',
+      'description' => isset($payment['settings']['begateway_name']) ? $payment['settings']['begateway_name'] : 'BeGateway',
       'active' => TRUE,
       'terminal' => TRUE,
       'offsite' => TRUE,
@@ -313,6 +314,15 @@ function begateway_settings_form($settings = NULL) {
     '#title' => t('ERIP service No'),
     '#default_value' => $settings['erip_service_no'],
   );
+  $form['test_mode'] = array(
+    '#type' => 'radios',
+    '#title' => t('Operation mode'),
+    '#default_value' => $settings['test_mode'],
+    '#options' => array(
+      0 => t('Live'),
+      1 => t('Test'),
+    )
+  );
 
   return $form;
 }
@@ -330,8 +340,8 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
 
   global $language;
 
-  $ow = entity_metadata_wrapper('commerce_order', $order->order_id);
-  $balance = commerce_payment_order_balance($order);
+  $ow = entity_metadata_wrapper('commerce_order', $order);
+  $order_total = $ow->commerce_order_total->value();
 
   // Prepare the billing address for use in the request.
   $billing_address = $ow->commerce_customer_billing->commerce_customer_address->value();
@@ -345,7 +355,7 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
   $settings = begateway_payment_method_load($payment_method);
   $settings = $settings['settings'];
 
-  $transaction = new \beGateway\GetPaymentToken;
+  $transaction = new \BeGateway\GetPaymentToken;
 
   if ($settings['type_transaction'] != 0) {
     $transaction->setAuthorizationTransactionType();
@@ -358,8 +368,8 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
   $notification_url = str_replace('carts.local', 'webhook.begateway.com:8443', $notification_url);
   $cancel_url = url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE));
 
-  $transaction->money->setCents($balance['amount']);
-  $transaction->money->setCurrency($balance['currency_code']);
+  $transaction->money->setCents($order_total['amount']);
+  $transaction->money->setCurrency($order_total['currency_code']);
   $transaction->setDescription(t('Order #') . $order->order_number);
   $transaction->setLanguage($language->language);
   $transaction->setNotificationUrl($notification_url);
@@ -382,17 +392,17 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
   }
 
   if ($settings['card_enable'] == 0) {
-    $cc = new \beGateway\PaymentMethod\CreditCard;
+    $cc = new \BeGateway\PaymentMethod\CreditCard;
     $transaction->addPaymentMethod($cc);
   }
 
   if ($settings['card_halva_enable'] == 0) {
-    $halva = new \beGateway\PaymentMethod\CreditCardHalva;
+    $halva = new \BeGateway\PaymentMethod\CreditCardHalva;
     $transaction->addPaymentMethod($halva);
   }
 
   if ($settings['erip_enable'] == 0) {
-    $erip = new \beGateway\PaymentMethod\Erip(array(
+    $erip = new \BeGateway\PaymentMethod\Erip(array(
       'order_id' => $order->order_number,
       'account_number' => strval($order->order_number),
       'service_no' => $settings['erip_service_no']
@@ -400,8 +410,10 @@ function begateway_redirect_form($form, &$form_state, $order, $payment_method) {
     $transaction->addPaymentMethod($erip);
   }
 
-  $transaction->setEmailReadonly();
-
+  if ($settings['test_mode'] == 1) {
+    $transaction->setTestMode();
+  }
+  
   $response2 = $transaction->submit();
 
   if ($response2->isSuccess()) {
@@ -433,7 +445,7 @@ function begateway_payment_notification() {
 
   $payment = begateway_payment_method_load();
 
-  $webhook = new \beGateway\Webhook;
+  $webhook = new \BeGateway\Webhook;
 
   if ($webhook->isAuthorized() && $webhook->isSuccess() && (int)$webhook->getTrackingId() == (int)$order_id) {
 
@@ -495,7 +507,7 @@ function begateway_payment_notification() {
 **/
 function begateway_payment_method_load($payment_method = NULL) {
 
-  libraries_load('beGateway');
+  libraries_load('BeGateway');
 
   $payment = $payment_method;
 
@@ -506,10 +518,10 @@ function begateway_payment_method_load($payment_method = NULL) {
       $payment = commerce_payment_method_instance_load('begateway|rules_begateway');
     }
   }
-  \beGateway\Settings::$shopKey = $payment['settings']['begateway_shop_key'];
-  \beGateway\Settings::$shopId = $payment['settings']['begateway_shop_id'];
-  \beGateway\Settings::$gatewayBase = 'https://' . $payment['settings']['begateway_payment_gateway_url'];
-  \beGateway\Settings::$checkoutBase = 'https://' . $payment['settings']['begateway_checkout_page_url'];
+  \BeGateway\Settings::$shopKey = $payment['settings']['begateway_shop_key'];
+  \BeGateway\Settings::$shopId = $payment['settings']['begateway_shop_id'];
+  \BeGateway\Settings::$gatewayBase = 'https://' . $payment['settings']['begateway_payment_gateway_url'];
+  \BeGateway\Settings::$checkoutBase = 'https://' . $payment['settings']['begateway_checkout_page_url'];
 
   return $payment;
 }
@@ -536,17 +548,17 @@ function begateway_get_order($order_id) {
  * @return mixed
  */
 function begateway_payment_libraries_info() {
-  $libraries['beGateway'] = array(
-    'name' => 'beGateway library php',
-    'vendor url' => 'https://github.com/beGateway/begateway-api-php/tree/master',
-    'download url' => 'https://github.com/beGateway/begateway-api-php/tree/master',
+  $libraries['BeGateway'] = array(
+    'name' => 'BeGateway library php',
+    'vendor url' => 'https://github.com/begateway/begateway-api-php/tree/master',
+    'download url' => 'https://github.com/begateway/begateway-api-php/tree/master',
     'version arguments' => array(
       'file' => 'VERSION',
       'pattern' => '/^(.+)/'
     ),
     'files' => array(
       'php' => array(
-        'lib/beGateway.php',
+        'lib/BeGateway.php',
       ),
     ),
   );
