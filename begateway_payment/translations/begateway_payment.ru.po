@@ -7,198 +7,202 @@
 #  include/begateway_payment.refund.inc: n/a
 #  include/begateway_payment.capture.inc: n/a
 #  include/begateway_payment.void.inc: n/a
-#  begateway_payment.install: n/a
 #  begateway_payment.info: n/a
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2017-03-09 20:35+0300\n"
-"PO-Revision-Date: 2017-03-09 20:35+0300\n"
+"POT-Creation-Date: 2018-04-19 00:03+0300\n"
+"PO-Revision-Date: 2018-04-19 00:06+0300\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Russian <EMAIL@ADDRESS>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=((((n%10)==1)&&((n%100)!=11))?(0):(((((n%10)>=2)&&((n%10)<=4))&&(((n%100)<10)||((n%100)>=20)))?(1):2));\n"
+"Plural-Forms: nplurals=3; plural=((((n%10)==1)&&((n%100)!=11))?(0):(((((n%10)>=2)&&((n%10)<=4))&&(((n%100)<10)||((n"
+"%100)>=20)))?(1):2));\n"
+"Language: ru\n"
+"X-Generator: Poedit 1.8.12\n"
 
-#: begateway_payment.module:57
+#: begateway_payment.module:58
 msgid "Id"
 msgstr "Id"
 
-#: begateway_payment.module:58
+#: begateway_payment.module:59
 msgid "Order Id"
 msgstr "Id заказа"
 
-#: begateway_payment.module:59
-msgid "Created"
-msgstr "Создан"
-
 #: begateway_payment.module:60
+msgid "Created"
+msgstr "Создано"
+
+#: begateway_payment.module:61
 msgid "Name/Email"
 msgstr "Имя/Email"
 
-#: begateway_payment.module:61
+#: begateway_payment.module:62
 msgid "Remote UID"
 msgstr "UID платёжной системы"
 
-#: begateway_payment.module:62;443
+#: begateway_payment.module:63;470
 msgid "Payment method"
 msgstr "Способ оплаты"
 
-#: begateway_payment.module:63
+#: begateway_payment.module:64
 msgid "Price"
 msgstr "Цена"
 
-#: begateway_payment.module:64
+#: begateway_payment.module:65
 msgid "Type"
 msgstr "Тип"
 
-#: begateway_payment.module:65
+#: begateway_payment.module:66
 msgid "Status"
 msgstr "Статус"
 
-#: begateway_payment.module:66
+#: begateway_payment.module:67
 msgid "Operation"
-msgstr "Операция"
+msgstr "Действие"
 
-#: begateway_payment.module:97;111;120;14
-#: include/begateway_payment.refund.inc:36
+#: begateway_payment.module:98;112;121;15 include/begateway_payment.refund.inc:36
 msgid "Refund"
 msgstr "Возвратить"
 
-#: begateway_payment.module:102;125;20 include/begateway_payment.capture.inc:25
+#: begateway_payment.module:103;126;21 include/begateway_payment.capture.inc:25
 msgid "Capture"
 msgstr "Списать"
 
-#: begateway_payment.module:105;26 include/begateway_payment.void.inc:25
+#: begateway_payment.module:106;27 include/begateway_payment.void.inc:25
 msgid "Void"
 msgstr "Аннулировать"
 
-#: begateway_payment.module:136
+#: begateway_payment.module:137
 msgid "Not available"
 msgstr "Недоступно"
 
-#: begateway_payment.module:141
+#: begateway_payment.module:142
 msgid "Commerce order: @id"
 msgstr "Commerce заказ: @id"
 
-#: begateway_payment.module:155
+#: begateway_payment.module:156
 msgid "There are no orders yet. Please create one."
 msgstr "Заказов пока нет. Пожалуйста, создайте один."
 
-#: begateway_payment.module:233
+#: begateway_payment.module:236
 msgid "Display payment name"
 msgstr "Имя способа оплаты для клиента"
 
-#: begateway_payment.module:239
+#: begateway_payment.module:242
 msgid "Shop ID"
 msgstr "Идентификационный номер магазина"
 
-#: begateway_payment.module:245
+#: begateway_payment.module:248
 msgid "Shop Key"
 msgstr "Секретный ключ магазина"
 
-#: begateway_payment.module:251
+#: begateway_payment.module:254
 msgid "Payment gateway domain"
 msgstr "Домен платежного шлюза"
 
-#: begateway_payment.module:258
+#: begateway_payment.module:261
 msgid "Checkout page domain"
 msgstr "Домен платежной страницы"
 
-#: begateway_payment.module:264
+#: begateway_payment.module:267
 msgid "Type transaction"
 msgstr "Тип операции"
 
-#: begateway_payment.module:267
+#: begateway_payment.module:270
 msgid "Payment"
 msgstr "Оплата"
 
-#: begateway_payment.module:268
+#: begateway_payment.module:271
 msgid "Authorization"
 msgstr "Авторизация"
 
-#: begateway_payment.module:279
+#: begateway_payment.module:282
 msgid "How many days order is valid for payment"
 msgstr "Время на оплату заказа (дней)"
 
-#: begateway_payment.module:285
+#: begateway_payment.module:288
 msgid "Enable bankcard payments"
 msgstr "Включить оплату банковской картой"
 
-#: begateway_payment.module:295
-msgid "Enable Halva bankcard payments"
-msgstr "Включить оплату картой Халва"
-
-#: begateway_payment.module:288;297
+#: begateway_payment.module:291;300;309
 msgid "Yes"
 msgstr "Да"
 
-#: begateway_payment.module:289;298
+#: begateway_payment.module:292;301;310
 msgid "No"
 msgstr "Нет"
 
-#: begateway_payment.module:294
+#: begateway_payment.module:297
+msgid "Enable Halva bankcard payments"
+msgstr "Включить оплату банковской картой Халва"
+
+#: begateway_payment.module:306
 msgid "Enable ERIP"
 msgstr "Включить оплату через ЕРИП"
 
-#: begateway_payment.module:303
+#: begateway_payment.module:315
 msgid "ERIP service No"
 msgstr "Код услуги ЕРИП"
 
-#: begateway_payment.module:353
+#: begateway_payment.module:320
+msgid "Operation mode"
+msgstr "Режим работы"
+
+#: begateway_payment.module:323
+msgid "Live"
+msgstr "Живой"
+
+#: begateway_payment.module:324
+msgid "Test"
+msgstr "Тест"
+
+#: begateway_payment.module:374
 msgid "Order #"
 msgstr "Заказ #"
 
-#: begateway_payment.module:397
+#: begateway_payment.module:424
 msgid "Go to payment"
 msgstr "Перейти к оплате"
 
-#: begateway_payment.module:403;405
-msgid ""
-"The payment gateway is currently unavailable, please chose another payment "
-"method, or contact an administrator."
-msgstr ""
-"Платёжная система временно не доступна. Выберите другой способ оплаты или "
-"свяжитесь с администратором магазина."
+#: begateway_payment.module:430;432
+msgid "The payment gateway is currently unavailable, please chose another payment method, or contact an administrator."
+msgstr "Платёжная система временно не доступна. Выберите другой способ оплаты или свяжитесь с администратором магазина."
 
-#: begateway_payment.module:443
+#: begateway_payment.module:470
 msgid "The payment has been completed."
 msgstr "Оплата успешна."
 
-#: begateway_payment.module:402
+#: begateway_payment.module:429
 msgid "commerce_payment_begateway"
 msgstr "commerce_payment_begateway"
 
-#: begateway_payment.module:402
+#: begateway_payment.module:429
 msgid "The website failed to get a payment token"
 msgstr "Ошибка полученя токена на оплату"
 
-#: begateway_payment.module:32
-msgid "beGateway orders"
-msgstr "Заказы"
-
 #: begateway_payment.module:33
-msgid "List of beGateway orders"
-msgstr "Список заказов"
+msgid "BeGateway orders"
+msgstr "Список заказов BeGateway"
 
-#: (duplicate) begateway_payment.install:18
-msgid "beGateway API library"
-msgstr "API библиотека beGateway"
-
-#: begateway_payment.info:0
-msgid "beGateway payment"
-msgstr "beGateway payment"
+#: begateway_payment.module:34
+msgid "List of BeGateway orders"
+msgstr "Список заказов BeGateway"
 
 #: begateway_payment.info:0
-msgid "Implements beGateway payment module for use with Drupal Commerce."
-msgstr "Модуль оплаты для платформы beGateway для Drupal Commerce."
+msgid "BeGateway payment"
+msgstr "BeGateway оплата "
 
 #: begateway_payment.info:0
-msgid "Commerce (beGateway)"
-msgstr "Commerce (beGateway)"
+msgid "Implements BeGateway payment module for use with Drupal Commerce."
+msgstr "Модуль оплаты платформы BeGateway для Drupal Commerce."
+
+#: begateway_payment.info:0
+msgid "Commerce (BeGateway)"
+msgstr "Commerce (BeGateway)"
 
 #: include/begateway_payment.capture.inc:21
 msgid "Capture amount (Order amount: @total)"
@@ -208,9 +212,7 @@ msgstr "Сумма списания (Сумма заказа: @total)"
 msgid "Are you sure you want to issue a capture?"
 msgstr "Вы уверены, что хотите списать средства?"
 
-#: include/begateway_payment.capture.inc:25
-#: include/begateway_payment.refund.inc:36
-#: include/begateway_payment.void.inc:25
+#: include/begateway_payment.capture.inc:25 include/begateway_payment.refund.inc:36 include/begateway_payment.void.inc:25
 msgid "Cancel"
 msgstr "Отмена"
 
@@ -230,9 +232,7 @@ msgstr "Авторизированная оплата была списана."
 msgid "Captured successfully."
 msgstr "Списано успешно."
 
-#: include/begateway_payment.capture.inc:104
-#: include/begateway_payment.refund.inc:104
-#: include/begateway_payment.void.inc:99
+#: include/begateway_payment.capture.inc:104 include/begateway_payment.refund.inc:104 include/begateway_payment.void.inc:99
 msgid "UID: "
 msgstr "UID: "
 

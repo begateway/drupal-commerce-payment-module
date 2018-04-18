@@ -9,26 +9,7 @@
  * Implements hook_requirements().
  */
 function begateway_payment_requirements($phase) {
-  $requirements = array();
-  $t = get_t();
-
-  if ($phase == 'runtime') {
-    $library = libraries_detect('beGateway');
-    $requirements['beGateway'] = array(
-      'title' => $t('beGateway API library'),
-    );
-    if ($library['installed']) {
-      $requirements['beGateway']['value'] = $library['version'];
-      $requirements['beGateway']['severity'] = REQUIREMENT_OK;
-    }
-    else {
-      $requirements['beGateway']['value'] = $library['error'];
-      $requirements['beGateway']['description'] = $library['error message'];
-      $requirements['beGateway']['severity'] = REQUIREMENT_ERROR;
-    }
-  }
-
-  return $requirements;
+  return array();
 }
 
 /**
